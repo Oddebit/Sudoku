@@ -1,6 +1,5 @@
 package be.od.model;
 
-import be.od.app.App;
 import lombok.Getter;
 
 import java.util.*;
@@ -9,18 +8,22 @@ import java.util.*;
 public class GridSolver {
 
     private final Grid originalGrid;
-    private Set<Grid> solutions;
+    private static final Set<Grid> solutions = new HashSet<>();
+
 
     public GridSolver(Grid grid) {
         this.originalGrid = grid;
-        this.solutions = new HashSet<>();
     }
 
-    public boolean solveGrid() {
-        Grid solvedGrid = solveThisGrid();
-
-        if(!solvedGrid.isCorrect()) {
+    public boolean isSolutionUnique() {
+        if (solutions.size() > 1) {
             return false;
+        }
+
+        Grid solvedGrid = solveGrid();
+
+        if (!solvedGrid.isCorrect()) {
+            return true;
         }
 
         if (solvedGrid.isComplete()) {
@@ -31,19 +34,16 @@ public class GridSolver {
             Set<Grid> gridsToTry = getGridsToTry(solvedGrid);
 
             for (Grid grid : gridsToTry) {
-                if (solutions.size() > 1) return false;
                 GridSolver gridSolver = new GridSolver(grid);
-                gridSolver.solveGrid();
-                solutions.addAll(gridSolver.getSolutions());
+                boolean uniqueSolutions = gridSolver.isSolutionUnique();
+                if (!uniqueSolutions) return false;
             }
         }
-        return false;
+        return true;
     }
 
-    public Grid solveThisGrid() {
+    public Grid solveGrid() {
         Grid solution = Grid.copyOf(originalGrid);
-        //System.out.println("\n *** NEW TRY *** ");
-        //System.out.println("\nTrying grid : " + originalGrid.getChangedTile());
 
         boolean isModified;
         do {
@@ -55,12 +55,11 @@ public class GridSolver {
 
                     int value = solveTile(solution, row, col);
                     if (value == -1) {
-                        //System.out.println("Abort");
                         solution.setCorrect(false);
                         return solution;
+
                     } else if (value != 0) {
                         solution.setValueAt(value, row, col);
-                        //System.out.printf("Found value : %d (%d, %d)%n", value, row, col);
                         isModified = true;
                     }
                 }
@@ -72,7 +71,7 @@ public class GridSolver {
 
     private Set<Grid> getGridsToTry(Grid grid) {
 
-        TileDto possibilities = grid.getTileToTry();
+        TilePossibilities possibilities = grid.getTileToTry();
         Tile tile = possibilities.getTile();
         List<Integer> values = possibilities.getPossibilities();
 
@@ -84,31 +83,10 @@ public class GridSolver {
 
             int row = tile.getRow();
             int col = tile.getCol();
-            //System.out.printf("Try value %d at (%d, %d)%n", value, row, col);
 
             gridToTry.setValueAt(value, row, col);
             gridToTry.setChangedTile(row, col);
             gridsToTry.add(gridToTry);
-        }
-
-        return gridsToTry;
-    }
-
-    private Set<Grid> getGridsToTryAncient(Grid grid) {
-        Map<Tile, List<Integer>> possibleValues = grid.getPossibleValues();
-        Set<Grid> gridsToTry = new HashSet<>();
-
-        for (Tile tile : possibleValues.keySet()) {
-            for (Integer value : possibleValues.get(tile)) {
-
-                Grid gridToTry = Grid.copyOf(grid);
-
-                int row = tile.getRow();
-                int col = tile.getCol();
-                gridToTry.setValueAt(value, row, col);
-
-                gridsToTry.add(gridToTry);
-            }
         }
 
         return gridsToTry;
@@ -125,30 +103,13 @@ public class GridSolver {
         }
     }
 
-    public int getNext(int index) {
-        if (index < 8) return ++index;
-        else return 0;
+    public static Set<Grid> getSolutions() {
+        Set<Grid> solutions = new HashSet<>();
+        GridSolver.solutions.forEach(grid -> solutions.add(Grid.copyOf(grid)));
+        return solutions;
     }
 
-    public enum State {
-        OOPS(0, "Something went wrong"),
-        YEAP(1, "This sudoku is feasable"),
-        NOPE(2, "This sudoku has multiple solutions");
-
-        private final int solutions;
-        private final String message;
-
-        State(int solutions, String message) {
-            this.solutions = solutions;
-            this.message = message;
-        }
-
-        public int getSolutions() {
-            return solutions;
-        }
-
-        public String getMessage() {
-            return message;
-        }
+    public static void clearSolutions() {
+        solutions.clear();
     }
 }

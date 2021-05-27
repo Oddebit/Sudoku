@@ -8,8 +8,8 @@ import java.util.*;
 public class Grid {
 
     private final Tile[][] grid;
-    private Tile changedTile;
     private boolean correct;
+    private Tile changedTile;
 
     public Grid() {
         grid = new Tile[9][9];
@@ -19,10 +19,6 @@ public class Grid {
             }
         }
         correct = true;
-    }
-
-    public Grid(Tile[][] grid) {
-        this.grid = grid;
     }
 
     public static Grid copyOf(Grid grid) {
@@ -67,10 +63,6 @@ public class Grid {
         return possibleValues;
     }
 
-    public List<Integer> getPossibleValuesAt(Tile tile) {
-        return getPossibleValuesAt(tile.getRow(), tile.getCol());
-    }
-
     public Map<Tile, List<Integer>> getPossibleValues() {
         Map<Tile, List<Integer>> possibleValues = new HashMap<>();
 
@@ -85,27 +77,15 @@ public class Grid {
         return possibleValues;
     }
 
-    public TileDto getTileToTry() {
+    public TilePossibilities getTileToTry() {
         Map<Tile, List<Integer>> possibleValuesToTry = getPossibleValues();
 
         Tile tileToTry = possibleValuesToTry.keySet()
                 .stream()
                 .min(Comparator.comparingInt(a -> possibleValuesToTry.get(a).size()))
-                .get();
+                .orElseThrow();
         List<Integer> valuesToTry = possibleValuesToTry.get(tileToTry);
-        return new TileDto(tileToTry, valuesToTry);
-    }
-
-
-    public boolean isNoOtherValuePossibleAt(int toTest, int row, int col) {
-        int count = 0;
-
-        for (int value = 1; value < 10; value++) {
-            if (value == toTest) continue;
-            if (isValuePossibleAt(value, row, col)) count++;
-        }
-
-        return count == 0;
+        return new TilePossibilities(tileToTry, valuesToTry);
     }
 
     public boolean isValuePossibleAt(int value, int row, int col) {
@@ -113,17 +93,6 @@ public class Grid {
                 && isRowFreeFromValue(value, row)
                 && isColFreeFromValue(value, col)
                 && isSquareFreeFromValue(value, row, col);
-    }
-
-    public boolean isValueCorrectAt(int row, int col) {
-        Tile tile = getTileAt(row, col);
-        int value = tile.getValue();
-        tile.empty();
-        boolean isCorrect = isColFreeFromValue(value, col)
-                && isRowFreeFromValue(value, row)
-                && isSquareFreeFromValue(value, row, col);
-        tile.setValue(value);
-        return isCorrect;
     }
 
     private boolean isColFreeFromValue(int value, int col) {
@@ -177,7 +146,7 @@ public class Grid {
     }
 
     public void setCorrect(boolean b) {
-        this.correct = false;
+        this.correct = b;
     }
 
     public void setChangedTile(int row, int col) {

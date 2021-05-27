@@ -20,10 +20,6 @@ public class Tile {
         return value == 0;
     }
 
-    public void empty(){
-        this.value = 0;
-    }
-
     @Override
     public String toString() {
         return  String.format("(%d, %d) %d", row, col, value);
